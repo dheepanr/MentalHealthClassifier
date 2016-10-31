@@ -5,10 +5,11 @@ from reddit.items import RedditItem
 
 class RedditSpider(scrapy.Spider):
 	name = 'reddit'
+	page_lim = 10
+	page_num = 0
 
 	def start_requests(self):
-		urls = ['https://www.reddit.com/r/depression/',
-		'https://www.reddit.com/r/ptsd']
+		urls = ['https://www.reddit.com/r/depression/', 'https://www.reddit.com/r/ptsd']
 
 		for url in urls:
 			yield scrapy.Request(url=url, callback=self.parse)
@@ -20,6 +21,12 @@ class RedditSpider(scrapy.Spider):
 			url_name = url['data-url']
 			follow_link = response.urljoin(url_name)
 			yield scrapy.Request(follow_link, callback=self.post_parse)
+
+		next_page =  page.find('span', {'class':'next-button'})
+		if next_page and self.page_num < self.page_lim:
+			next_link = response.urljoin(next_page.a['href'])
+			self.page_num += 1
+			yield scrapy.Request(next_link, callback=self.parse)
 
 	def post_parse(self, response):
 		item = RedditItem()
